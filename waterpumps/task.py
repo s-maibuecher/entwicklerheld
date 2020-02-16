@@ -9,7 +9,7 @@ class WaterPumpAnalyzer:
         # Create your storage attributes here.
 
         # todo besser timedelta nehmen?
-        self.data_array = np.zeros((10,), dtype=[('time', 'M'), ('loc', 'U20'), ('is_pump', '?'), ('energy_consumption', 'f8'), ('value', 'i4')])
+        self.data_array = np.zeros((100000,), dtype=[('time', 'datetime64[s]'), ('loc', 'U20'), ('is_pump', '?'), ('energy_consumption', 'f8'), ('value', 'i4')])
         self.count_entries = 0
         pass
 
@@ -51,13 +51,13 @@ class WaterPumpAnalyzer:
 
         value = 0 if is_pump else data['value']
 
-        self.data_array[self.count_entries] = (data['time'], data['location'], is_pump, energy_consumption, value)
+        self.data_array[self.count_entries] = (np.datetime64(data['time']), data['location'], is_pump, energy_consumption, value)
         self.count_entries +=1
 
     def get_raw_data(self, timestamp: str, device: str, location: str) -> dict:
         # Implement this in Scenario 1
         print(self.data_array)
-        pass
+        return {}
 
     def is_error_mode(self, start: datetime.date, end: datetime.date, location: str) -> bool:
         # Implement this in Scenario 2,3 and 4
