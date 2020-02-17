@@ -8,8 +8,10 @@ class WaterPumpAnalyzer:
     def __init__(self):
         # Create your storage attributes here.
 
+        self.data_container = {}
+
         # todo besser timedelta nehmen?
-        self.data_array = np.zeros((100000,), dtype=[('time', 'datetime64[s]'), ('loc', 'U20'), ('is_pump', '?'), ('energy_consumption', 'f8'), ('value', 'i4')])
+        self.data_array = np.zeros((5,), dtype=[('time', 'datetime64[s]'), ('loc', 'U20'), ('is_pump', '?'), ('energy_consumption', 'f8'), ('value', 'i4')])
         self.count_entries = 0
         pass
 
@@ -51,14 +53,27 @@ class WaterPumpAnalyzer:
 
         value = 0 if is_pump else data['value']
 
-        self.data_array[self.count_entries] = (np.datetime64(data['time']), data['location'], is_pump, energy_consumption, value)
+        try:
+            self.data_array[self.count_entries] = (np.datetime64(data['time']), data['location'], is_pump, energy_consumption, value)
+        except IndexError:
+            print('###'*10)
+            print(self.data_array.shape)
+            shape_ = self.data_array.shape[0]
+            self.data_array.resize((shape_ + 10000000,), refcheck=False )
+            self.data_array[self.count_entries] = (
+                np.datetime64(data['time']), data['location'], is_pump, energy_consumption, value)
         self.count_entries +=1
+
+        # --> https://stackoverflow.com/a/12285656/2952486
+
+        ### HIER WEITER ######### --> ich glaube ein dict mit Städte Keys, value ist eine Datei, die als Einträge die einzelnen Tage hat
 
     def get_raw_data(self, timestamp: str, device: str, location: str) -> dict:
         # Implement this in Scenario 1
-        print(self.data_array)
+
         return {}
 
     def is_error_mode(self, start: datetime.date, end: datetime.date, location: str) -> bool:
         # Implement this in Scenario 2,3 and 4
+
         pass
