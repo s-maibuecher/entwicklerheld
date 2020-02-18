@@ -1,9 +1,9 @@
 <?xml version="1.0" ?>
-<testsuite errors="4" failures="0" name="WaterPumpsTests-20200212213716" tests="4" time="0.245">
-	<testcase classname="WaterPumpsTests" name="test_scenario_1_analyzing" time="0.235">
+<testsuite errors="4" failures="0" name="WaterPumpsTests-20200214141833" tests="4" time="0.159">
+	<testcase classname="WaterPumpsTests" name="test_scenario_1_analyzing" time="0.148">
 		<error message="None != False : Expected False but was None for Berlin with start 2020-02-13 and end 2020-02-14." type="AssertionError">
 <![CDATA[Traceback (most recent call last):
-  File "D:\programmierung\workspace\entwicklerheld\waterpumps\tests.py", line 97, in test_scenario_1_analyzing
+  File "C:\work\my-python-playground\entwicklerheld\waterpumps\tests.py", line 97, in test_scenario_1_analyzing
     self.assertEqual(result, False, f"Expected False but was {result} for Berlin with start {start} and end {end}.")
 AssertionError: None != False : Expected False but was None for Berlin with start 2020-02-13 and end 2020-02-14.
 ]]>		</error>
@@ -11,7 +11,7 @@ AssertionError: None != False : Expected False but was None for Berlin with star
 	<testcase classname="WaterPumpsTests" name="test_scenario_1_saving" time="0.001">
 		<error message="None != 1269 : Expected a energy consumption of 1269 but got None for get_raw_data(timestamp=&quot;2020-02-10T11:33:00.299356+01:00&quot;, device=&quot;pump&quot;, location=&quot;Hamburg&quot;)" type="AssertionError">
 <![CDATA[Traceback (most recent call last):
-  File "D:\programmierung\workspace\entwicklerheld\waterpumps\tests.py", line 57, in test_scenario_1_saving
+  File "C:\work\my-python-playground\entwicklerheld\waterpumps\tests.py", line 57, in test_scenario_1_saving
     f"Expected a energy consumption of {data.get('energy_consumption')} but got {result} for "
 AssertionError: None != 1269 : Expected a energy consumption of 1269 but got None for get_raw_data(timestamp="2020-02-10T11:33:00.299356+01:00", device="pump", location="Hamburg")
 ]]>		</error>
@@ -19,15 +19,15 @@ AssertionError: None != 1269 : Expected a energy consumption of 1269 but got Non
 	<testcase classname="WaterPumpsTests" name="test_scenario_2_analyzing" time="0.005">
 		<error message="None != True : Expected True but was None for Zuerich with start 2020-02-03 and end 2020-02-04." type="AssertionError">
 <![CDATA[Traceback (most recent call last):
-  File "D:\programmierung\workspace\entwicklerheld\waterpumps\tests.py", line 114, in test_scenario_2_analyzing
+  File "C:\work\my-python-playground\entwicklerheld\waterpumps\tests.py", line 114, in test_scenario_2_analyzing
     self.assertEqual(result, True, f"Expected True but was {result} for Zuerich with start {start} and end {end}.")
 AssertionError: None != True : Expected True but was None for Zuerich with start 2020-02-03 and end 2020-02-04.
 ]]>		</error>
 	</testcase>
-	<testcase classname="WaterPumpsTests" name="test_scenario_3_analyzing" time="0.004">
+	<testcase classname="WaterPumpsTests" name="test_scenario_3_analyzing" time="0.005">
 		<error message="None != True : Expected True but was None for Vienna with start 2019-12-03 and end 2019-12-04. Energy consumption is higher than 20% of the average, but there was no rain!" type="AssertionError">
 <![CDATA[Traceback (most recent call last):
-  File "D:\programmierung\workspace\entwicklerheld\waterpumps\tests.py", line 131, in test_scenario_3_analyzing
+  File "C:\work\my-python-playground\entwicklerheld\waterpumps\tests.py", line 131, in test_scenario_3_analyzing
     self.assertEqual(result, True, f"Expected True but was {result} for Vienna with start {start} and end {end}. Energy consumption is higher than 20% of the average, but there was no rain!")
 AssertionError: None != True : Expected True but was None for Vienna with start 2019-12-03 and end 2019-12-04. Energy consumption is higher than 20% of the average, but there was no rain!
 ]]>		</error>

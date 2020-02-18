@@ -1,0 +1,7 @@
+test_scenario_1_saving:
+
+PASSED                 [ 50%]##polylith[testStarted
+*** Saving 500 messages took 0:00:00.008030 ***
+
+in der PyCharm Messleiste steht 10ms.
+
