@@ -5,3 +5,6 @@ PASSED                 [ 50%]##polylith[testStarted
 
 in der PyCharm Messleiste steht 10ms.
 
+# Magma Rechner:
+*** Saving 500 messages took 0:00:00.007989 ***
+Messleiste 8ms

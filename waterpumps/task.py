@@ -2,6 +2,8 @@ import datetime
 import numpy as np
 import arrow
 from collections import defaultdict
+import pickle
+from functools import reduce
 
 class WaterPumpAnalyzer:
 
@@ -11,7 +13,6 @@ class WaterPumpAnalyzer:
         self.pump_data_container = defaultdict(dict)
         self.rain_gauge_data_container = defaultdict(dict)
 
-        # todo besser timedelta nehmen?
         # self.data_array = np.zeros((10000,), dtype=[('time', 'datetime64[s]'), ('loc', 'U20'), ('is_pump', '?'), ('energy_consumption', 'f8'), ('value', 'i4')])
         # self.count_entries = 0
         pass
@@ -105,7 +106,24 @@ class WaterPumpAnalyzer:
             # dann leg den Tag an:
             data_container[stadt_name][day_string] = [(time_data[10:], data_value)]
 
-            # todo hier Vortag testen und falls abgeschlossen serialisieren
+            date_prev_day = datetime.datetime.strptime(day_string, '%Y%m%d').date() - datetime.timedelta(1)
+            date_prev_day= str(date_prev_day).replace('-', '')
+
+            # todo was ist, wenn der Vortag keine Daten hatte, wegen Sonntag oder so...
+
+            if date_prev_day in data_container[stadt_name]:
+                _temp_data_list = data_container[stadt_name][date_prev_day]
+                try:
+                    # hier vorher noch avarage ausrechnen:
+                    _list_data_avarage = sum(i[1] for i in _temp_data_list)/float(len(_temp_data_list))
+
+                    fname = f'{stadt_name}_{data["device"]}_{date_prev_day}.pkl'
+                    with open(fname, 'wb') as f:
+                        pickle.dump(_temp_data_list, f)
+                    _temp_data_list = (fname, _list_data_avarage)
+                except:
+                    pass
+
         else:
             # Tag existiert schon:
             data_container[stadt_name][day_string].append((time_data[10:], data_value))
@@ -143,6 +161,8 @@ class WaterPumpAnalyzer:
 
         # hier die Abfrage:
         liste_mit_tageseintraegen = data_container[stadt_name][day_string]
+
+        # --> hier weiter: ist es ein lokales Array oder ein Verweis auf eine pickle Datei?
 
         # todo hier ist auf jeden Fall noch Optimierungspotenzial, Sortieralgorithmus...
         result= liste_mit_tageseintraegen[self.getIndexOfTuple(liste_mit_tageseintraegen, 0, uhrzeit)][1]
