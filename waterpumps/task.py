@@ -1,79 +1,20 @@
 import datetime
-#import numpy as np
-#import arrow
 from collections import defaultdict
 import pickle
-#from functools import reduce
 
-class WaterPumpAnalyzer:
+'''
+        Vorab als kleine Anmerkung: Ich muss zugeben, dass der Code nicht ganz clean ist, ich habe mir aber noch schnell die Mühe gemacht
+        ihn an den entscheidenden Stellen zu erläutern.
+        Mit "nicht ganz clean" meine ich vor allem das fehlende DRY Prinzip, welches unten bei den Abfragen der
+        Durchschnittswerte von energy_consumption und rain_value auffällt.
+        Dies entschuldige ich aber aufgrund des Zeitdrucks. Ich hatte nicht viel Zeit für diese Aufgabe und bin durchaus
+        in der Lage den Code schön und clean zu refactoren. ;)
+        
+        Hier zur Aufgabe:  
 
-    def __init__(self):
-        # Create your storage attributes here.
-
-        self.pump_data_container = defaultdict(dict)
-        self.rain_gauge_data_container = defaultdict(dict)
-
-        # self.data_array = np.zeros((10000,), dtype=[('time', 'datetime64[s]'), ('loc', 'U20'), ('is_pump', '?'), ('energy_consumption', 'f8'), ('value', 'i4')])
-        # self.count_entries = 0
-        pass
-
-    def handle_message(self, data: dict):
-        ''' erstmal structured arrays ausprobieren und die mit jedem neuen Eintrag erweitern
-        Wobei erweitern wohl teurer ist als im vorhinein platz zu reservieren (=preallocating)
-
-        das könnte ich mal mit dem timeit Modul testen
-
-        wobei die Frage halt ist wieviel Platz ich reserviere
-
-        ob eine Datenbank schneller ist?
-
-        print(data)
-        {'time': '2020-02-14T22:51:00.082529+01:00', 'location': 'Hamburg', 'device': 'pump', 'energy_consumption': 2248.866}
-
-        oder
-
-        {'time': '2020-02-14T22:51:30.317235+01:00', 'location': 'Berlin', 'device': 'rain_gauge', 'value': 8}
-
-        Fragen die aufkommen:
-
-            Daten abschneiden? Ist wirklich jede Milisekunde nötig? Bringt das was?
-
-            https://stackoverflow.com/a/30330699/2952486
-
-            If that is too slow, why no use an in-memory database? One solution is to use in-memory sqlite3 https://stackoverflow.com/a/21855457/2952486
-
-            you can resize the array in chunks with np.resize, which will still be much faster than the other approach.
-
-            dtype: timedelta lieber als datetime?
-
-            http://chrisschell.de/2018/02/01/how-to-efficiently-deal-with-huge-Numpy-arrays.html
-
-        '''
-        # is_pump = True if data['device'] == 'pump' else False
-        #
-        # energy_consumption = data['energy_consumption'] if is_pump else 0.0
-        #
-        # value = 0 if is_pump else data['value']
-        #
-        # try:
-        #     self.data_array[self.count_entries] = (np.datetime64(data['time']), data['location'], is_pump, energy_consumption, value)
-        # except IndexError:
-        #     print('###'*10)
-        #     print(self.data_array.shape)
-        #     shape_ = self.data_array.shape[0]
-        #     self.data_array.resize((shape_ + 100000,), refcheck=False )
-        #     self.data_array[self.count_entries] = (
-        #         np.datetime64(data['time']), data['location'], is_pump, energy_consumption, value)
-        # self.count_entries +=1
-        #
-        # # --> https://stackoverflow.com/a/12285656/2952486
-        #
-        # ### HIER WEITER ######### --> ich glaube ein dict mit Städte Keys, value ist eine Datei, die als Einträge die einzelnen Tage hat
-
-        '''
         Ich arbeite mit der Annahme, dass die Devices keine alten Stati mehr hochschicken:
         dh. ich speicher die Daten fortführend in Tagesintervallen wie folgt ab:
-        
+
         pump_data_container = {
             'Köln': {
                 '20200101' : [(dateiverweis, summe_aller_werte, listen_länge)] # alle Meldungen dieses Tages schon erhalten -> wird aus dem RAM gesourced, um Platz freizumachen
@@ -85,8 +26,30 @@ class WaterPumpAnalyzer:
             },
             # ...
         }
-        
-        '''
+
+        Analog für die Regenpumpen.
+        Sobald ein Tag in Gänze abgespeichert wurde habe ich diesen vorsichtshalber aus Platzgründen serialisiert, um den Arbeitsspeicher frei zu machen.
+        Man weiß ja nicht wie groß die Validierungsdaten sind. ;)
+
+        Dabei kam ich auf die Idee die Avarage Tages Daten vorab einmal zu berechnen, um hier die Zugriffszeiten zu optimieren.
+
+        Auf Numpy habe ich verzichtet, ich sehe da keinen Vorteil, da die mathematischen Berechnungen sich ja im Rahmen halten
+        und die Serialisierung mit reinem Python auch ohne Numpy C-optimiert ist.
+
+        Bin gespannt, ob ich recht behalte...
+
+        Jedenfalls schöner Wettbewerb. Ich hätte mir vielleicht eine laufende Rankingliste gewünscht und damit auch die Möglichkeit sich weiter zu verbessern.
+
+'''
+
+class WaterPumpAnalyzer:
+
+    def __init__(self):
+        # Worked with two containers which saved day-wise data for the two different devices:
+        self.pump_data_container = defaultdict(dict)
+        self.rain_gauge_data_container = defaultdict(dict)
+
+    def handle_message(self, data: dict):
 
         is_pump = True if data['device'] == 'pump' else False
         stadt_name = data['location']
@@ -140,12 +103,8 @@ class WaterPumpAnalyzer:
         # Matches behavior of list.index
         raise ValueError("list.index(x): x not in list")
 
-        # getIndexOfTuple(tuple_list, 0, "cherry")  # = 1
 
     def get_raw_data(self, timestamp: str, device: str, location: str) -> dict:
-        # Implement this in Scenario 1
-        # Beispielaufruf: get_raw_data(timestamp='2020-02-10T11:33:00.299356+01:00', device="pump",
-        #                                        location="Hamburg")
 
         is_pump = True if device == 'pump' else False
         stadt_name = location
@@ -159,7 +118,6 @@ class WaterPumpAnalyzer:
 
         else:  # -> rain_gauge
             data_container = self.rain_gauge_data_container
-
 
         # hier die Abfrage:
         liste_mit_tageseintraegen = data_container[stadt_name][day_string]
@@ -261,6 +219,8 @@ class WaterPumpAnalyzer:
 
         # Energy Consumption went up more than 20%?
         if average_queried_days > average_prev_queried_days * 1.2:
+
+            # so we have to take a look at the rain gauge devices:
 
             data_container = self.rain_gauge_data_container
 
