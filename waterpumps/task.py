@@ -262,7 +262,88 @@ class WaterPumpAnalyzer:
         # Energy Consumption went up more than 20%?
         if average_queried_days > average_prev_queried_days * 1.2:
 
+            data_container = self.rain_gauge_data_container
 
-            return True
+            # calculate metrics before queried time delta:
+            delta = end - start
+
+            overall_consumption_and_sum_entries = (0, 0)
+
+            for i in range(delta.days + 1):
+                day = start + datetime.timedelta(days=i)
+                day = str(day).replace('-', '')
+
+                liste_mit_tageseintraegen = []
+
+                try:
+                    liste_mit_tageseintraegen = data_container[location][day]
+                except:
+                    # keine Daten vorhanden
+                    liste_mit_tageseintraegen = [('', 0, 0)]
+
+                # ist es ein lokales gespeichertes Array oder ein Verweis auf eine pickle Datei?
+                is_data_serialized = False
+                if liste_mit_tageseintraegen[0][0][-4:] == '.pkl':
+                    is_data_serialized = True
+
+                if is_data_serialized:
+                    overall_consumption_and_sum_entries = (
+                    overall_consumption_and_sum_entries[0] + liste_mit_tageseintraegen[0][1],
+                    overall_consumption_and_sum_entries[1] + liste_mit_tageseintraegen[0][2])
+                else:
+                    list_data_sum = sum(i[1] for i in liste_mit_tageseintraegen)
+                    overall_consumption_and_sum_entries = (overall_consumption_and_sum_entries[0] + list_data_sum,
+                                                           overall_consumption_and_sum_entries[1] + len(
+                                                               liste_mit_tageseintraegen))
+
+            average_queried_days = float(overall_consumption_and_sum_entries[0]) / overall_consumption_and_sum_entries[
+                1]
+
+            # calculate metrics before queried time delta:
+            test_end = start - datetime.timedelta(1)
+            test_start = test_end - delta
+
+            prev_days_consumption = []
+
+            overall_consumption_and_sum_entries = (0, 0)
+
+            delta_test = test_end - test_start
+            for i in range(delta_test.days + 1):
+                day = test_start + datetime.timedelta(days=i)
+                day = str(day).replace('-', '')
+
+                liste_mit_tageseintraegen = []
+
+                try:
+                    liste_mit_tageseintraegen = data_container[location][day]
+                except:
+                    # keine Daten vorhanden
+                    liste_mit_tageseintraegen = [('', 0, 0)]
+
+                # ist es ein lokales gespeichertes Array oder ein Verweis auf eine pickle Datei?
+                is_data_serialized = False
+                if liste_mit_tageseintraegen[0][0][-4:] == '.pkl':
+                    is_data_serialized = True
+
+                if is_data_serialized:
+                    overall_consumption_and_sum_entries = (
+                        overall_consumption_and_sum_entries[0] + liste_mit_tageseintraegen[0][1],
+                        overall_consumption_and_sum_entries[1] + liste_mit_tageseintraegen[0][2])
+                else:
+                    list_data_sum = sum(i[1] for i in liste_mit_tageseintraegen)
+                    overall_consumption_and_sum_entries = (overall_consumption_and_sum_entries[0] + list_data_sum,
+                                                           overall_consumption_and_sum_entries[1] + len(
+                                                               liste_mit_tageseintraegen))
+
+            average_prev_queried_days = float(overall_consumption_and_sum_entries[0]) / \
+                                        overall_consumption_and_sum_entries[1]
+
+            # print(average_queried_days, average_prev_queried_days)
+
+            # Rain also went up more than 20%?
+            if not average_queried_days > average_prev_queried_days * 1.2:
+
+                # rain doesn't went up more than 20 % --> seems to be an error!
+                return True
 
         return False
