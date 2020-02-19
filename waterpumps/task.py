@@ -1,9 +1,9 @@
 import datetime
-import numpy as np
-import arrow
+#import numpy as np
+#import arrow
 from collections import defaultdict
 import pickle
-from functools import reduce
+#from functools import reduce
 
 class WaterPumpAnalyzer:
 
@@ -76,8 +76,8 @@ class WaterPumpAnalyzer:
         
         pump_data_container = {
             'Köln': {
-                '20200101' : dateiverweis, # alle Meldungen dieses Tages schon erhalten -> wird aus dem RAM gesourced, um Platz freizumachen
-                '20200102' : dateiverweis, # alle Meldungen dieses Tages schon erhalten -> wird aus dem RAM gesourced, um Platz freizumachen
+                '20200101' : [(dateiverweis, summe_aller_werte, listen_länge)] # alle Meldungen dieses Tages schon erhalten -> wird aus dem RAM gesourced, um Platz freizumachen
+                '20200102' : [(dateiverweis, summe_aller_werte, listen_länge)] # alle Meldungen dieses Tages schon erhalten -> wird aus dem RAM gesourced, um Platz freizumachen
                 '20200103' : [(<uhrzeit>, <energie_consumption>), ...], # aktuellster Array wird noch laufend erweitert
             },
             'Düsseldorf': {
@@ -94,7 +94,6 @@ class WaterPumpAnalyzer:
 
         day_string = time_data[:10].replace('-', '')
 
-
         if is_pump:
             data_container = self.pump_data_container
             data_value = data['energy_consumption']
@@ -109,18 +108,21 @@ class WaterPumpAnalyzer:
             date_prev_day = datetime.datetime.strptime(day_string, '%Y%m%d').date() - datetime.timedelta(1)
             date_prev_day= str(date_prev_day).replace('-', '')
 
-            # todo was ist, wenn der Vortag keine Daten hatte, wegen Sonntag oder so...
+            # what is, when the prev day no data was sent? maybe because of a sunday? Then take the prevprevday:
+            if date_prev_day not in data_container[stadt_name]:
+                date_prev_day = datetime.datetime.strptime(day_string, '%Y%m%d').date() - datetime.timedelta(2)
+                date_prev_day = str(date_prev_day).replace('-', '')
 
             if date_prev_day in data_container[stadt_name]:
                 _temp_data_list = data_container[stadt_name][date_prev_day]
                 try:
-                    # hier vorher noch avarage ausrechnen:
-                    _list_data_avarage = sum(i[1] for i in _temp_data_list)/float(len(_temp_data_list))
+                    # hier vorher noch die sum ausrechnen:
+                    _list_data_sum = sum(i[1] for i in _temp_data_list)
 
                     fname = f'{stadt_name}_{data["device"]}_{date_prev_day}.pkl'
                     with open(fname, 'wb') as f:
                         pickle.dump(_temp_data_list, f)
-                    _temp_data_list = (fname, _list_data_avarage)
+                    data_container[stadt_name][date_prev_day] = [(fname, _list_data_sum, len(_temp_data_list))]
                 except:
                     pass
 
@@ -162,10 +164,19 @@ class WaterPumpAnalyzer:
         # hier die Abfrage:
         liste_mit_tageseintraegen = data_container[stadt_name][day_string]
 
-        # --> hier weiter: ist es ein lokales Array oder ein Verweis auf eine pickle Datei?
+        # ist es ein lokales gespeichertes Array oder ein Verweis auf eine pickle Datei?
+        is_data_serialized = False
+        if liste_mit_tageseintraegen[0][0][-4:] == '.pkl':
+            is_data_serialized = True
+
+        if is_data_serialized:
+            with open(liste_mit_tageseintraegen[0][0], 'rb') as f:
+                _temp_list = pickle.load(f)
+        else:
+            _temp_list = liste_mit_tageseintraegen
 
         # todo hier ist auf jeden Fall noch Optimierungspotenzial, Sortieralgorithmus...
-        result= liste_mit_tageseintraegen[self.getIndexOfTuple(liste_mit_tageseintraegen, 0, uhrzeit)][1]
+        result= _temp_list[self.getIndexOfTuple(_temp_list, 0, uhrzeit)][1]
 
         return result
         #return {}
@@ -173,13 +184,85 @@ class WaterPumpAnalyzer:
 
 
     def is_error_mode(self, start: datetime.date, end: datetime.date, location: str) -> bool:
-        # Implement this in Scenario 2,3 and 4
-        #print(start, end)
 
+        data_container = self.pump_data_container
+
+        # calculate metrics before queried time delta:
         delta = end - start
+
+        overall_consumption_and_sum_entries = (0,0)
 
         for i in range(delta.days + 1):
             day = start + datetime.timedelta(days=i)
-            print(day)
+            day = str(day).replace('-', '')
 
-        pass
+            liste_mit_tageseintraegen = []
+
+            try:
+                liste_mit_tageseintraegen = data_container[location][day]
+            except:
+                # keine Daten vorhanden
+                liste_mit_tageseintraegen = [('', 0, 0)]
+
+            # ist es ein lokales gespeichertes Array oder ein Verweis auf eine pickle Datei?
+            is_data_serialized = False
+            if liste_mit_tageseintraegen[0][0][-4:] == '.pkl':
+                is_data_serialized = True
+
+            if is_data_serialized:
+                overall_consumption_and_sum_entries = (overall_consumption_and_sum_entries[0]+ liste_mit_tageseintraegen[0][1], overall_consumption_and_sum_entries[1] + liste_mit_tageseintraegen[0][2] )
+            else:
+                list_data_sum = sum(i[1] for i in liste_mit_tageseintraegen)
+                overall_consumption_and_sum_entries = (overall_consumption_and_sum_entries[0]+ list_data_sum, overall_consumption_and_sum_entries[1] +  len(liste_mit_tageseintraegen))
+
+
+        average_queried_days = float(overall_consumption_and_sum_entries[0])/overall_consumption_and_sum_entries[1]
+
+
+        # calculate metrics before queried time delta:
+        test_end = start - datetime.timedelta(1)
+        test_start = test_end - delta
+
+        prev_days_consumption = []
+
+        overall_consumption_and_sum_entries = (0, 0)
+
+        delta_test = test_end - test_start
+        for i in range(delta_test.days + 1):
+            day = test_start + datetime.timedelta(days=i)
+            day = str(day).replace('-', '')
+
+            liste_mit_tageseintraegen = []
+
+            try:
+                liste_mit_tageseintraegen = data_container[location][day]
+            except:
+                # keine Daten vorhanden
+                liste_mit_tageseintraegen = [('',0,0)]
+
+            # ist es ein lokales gespeichertes Array oder ein Verweis auf eine pickle Datei?
+            is_data_serialized = False
+            if liste_mit_tageseintraegen[0][0][-4:] == '.pkl':
+                is_data_serialized = True
+
+            if is_data_serialized:
+                overall_consumption_and_sum_entries = (
+                overall_consumption_and_sum_entries[0] + liste_mit_tageseintraegen[0][1],
+                overall_consumption_and_sum_entries[1] + liste_mit_tageseintraegen[0][2])
+            else:
+                list_data_sum = sum(i[1] for i in liste_mit_tageseintraegen)
+                overall_consumption_and_sum_entries = (overall_consumption_and_sum_entries[0] + list_data_sum,
+                                                       overall_consumption_and_sum_entries[1] + len(
+                                                           liste_mit_tageseintraegen))
+
+        average_prev_queried_days = float(overall_consumption_and_sum_entries[0]) / overall_consumption_and_sum_entries[1]
+
+        #print(average_queried_days, average_prev_queried_days)
+
+        # Energy Consumption went up more than 20%?
+        if average_queried_days > average_prev_queried_days * 1.2:
+
+
+            return True
+
+        return False
